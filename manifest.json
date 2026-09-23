@@ -1,0 +1,8 @@
+{
+  "name":"ドローン飛行日誌",
+  "short_name":"飛行日誌",
+  "start_url":"./",
+  "display":"standalone",
+  "background_color":"#f6f8fb",
+  "theme_color":"#1f6feb"
+}
