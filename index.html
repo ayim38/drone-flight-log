@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1f6feb">
+<link rel="manifest" href="./manifest.json">
+<title>ドローン飛行日誌</title>
+<style>
+:root{--bg:#f6f8fb;--card:#fff;--text:#17212b;--muted:#687584;--border:#d9e0e8;--accent:#1f6feb;--warn:#fff5e6}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans","Yu Gothic UI",sans-serif}
+header{position:sticky;top:0;z-index:10;background:#fff;border-bottom:1px solid var(--border);padding:12px 16px}header b{font-size:18px}
+main{max-width:760px;margin:auto;padding:14px 14px 88px}.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:12px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}@media(max-width:560px){.grid{grid-template-columns:1fr}}
+label{display:block;font-size:13px;font-weight:700;margin:0 0 5px}input,select,textarea,button{font:inherit}
+input,select,textarea{width:100%;min-height:46px;border:1px solid var(--border);border-radius:11px;padding:10px;background:#fff;font-size:16px}textarea{min-height:84px}
+button{min-height:46px;border:0;border-radius:11px;padding:10px 14px;font-weight:700}.primary{background:var(--accent);color:#fff}.secondary{background:#eaf0f6}.hidden{display:none!important}
+.mode{display:grid;grid-template-columns:1fr 1fr;gap:8px}.mode button{background:#edf2f7}.mode button.active{background:var(--accent);color:#fff}.note{font-size:13px;color:var(--muted);line-height:1.5}
+.warn{background:var(--warn);padding:10px 12px;border-radius:11px;font-size:13px;line-height:1.5}.record{padding:11px 0;border-bottom:1px solid #edf1f5}.record:last-child{border-bottom:0}
+nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--border);display:grid;grid-template-columns:repeat(3,1fr);padding-bottom:env(safe-area-inset-bottom)}
+nav button{background:#fff;border-radius:0;font-size:12px}.view{display:none}.view.active{display:block}
+@media print{header,nav,.no-print{display:none!important}.view{display:none!important}#printView{display:block!important}body{background:#fff}main{padding:0;max-width:none}.card{border:0}}
+table{width:100%;border-collapse:collapse;font-size:12px}th,td{border:1px solid #333;padding:5px;vertical-align:top}
+</style>
+</head>
+<body>
+<header><b>ドローン飛行日誌</b></header>
+<main>
+<section id="recordView" class="view active">
+<div class="card">
+<div class="mode"><button id="normalBtn" type="button" class="active">通常記録</button><button id="pastBtn" type="button">過去記録</button></div>
+<p id="modeText" class="note">通常記録：飛行時に開始・終了を押せます。時刻は手動修正できます。</p>
+</div>
+<form id="flightForm">
+<div class="card">
+<div class="grid">
+<div><label>機体</label><select id="aircraft" required></select></div>
+<div><label>操縦者</label><select id="pilot" required></select></div>
+<div><label>飛行年月日</label><input id="date" type="date" required></div>
+<div><label>飛行目的</label><input id="purpose" placeholder="例：飛行練習"></div>
+</div>
+<label style="margin-top:10px">飛行場所・経路</label><textarea id="place"></textarea>
+</div>
+<div id="normalPanel" class="card">
+<div class="grid"><button id="start" type="button" class="primary">飛行開始</button><button id="stop" type="button" class="secondary">飛行終了</button></div>
+<p class="note">ボタンを押さなくても、下の時刻欄に手動入力できます。</p>
+</div>
+<div class="card">
+<div class="grid"><div><label>離陸時刻</label><input id="takeoff" type="time"></div><div><label>着陸時刻</label><input id="landing" type="time"></div></div>
+<div id="unknownWrap" class="hidden" style="margin-top:10px"><label><input id="unknownTimes" type="checkbox" style="width:auto;min-height:0"> 正確な離着陸時刻は不明</label></div>
+<div class="grid" style="margin-top:10px"><div><label>正味飛行時間（分）</label><input id="minutes" type="number" min="1" step="1" placeholder="例：45"></div>
+<div id="confidenceWrap" class="hidden"><label>飛行時間の確かさ</label><select id="confidence"><option value="exact">正確</option><option value="approx">概算</option><option value="unknown">不明</option></select></div></div>
+<div id="pastHint" class="warn hidden" style="margin-top:10px">分からない時刻は推測せず「不明」で保存できます。概算の飛行時間は「概算」として記録します。</div>
+</div>
+<div id="pastPanel" class="card hidden">
+<div class="grid"><div><label>遡及入力日</label><input id="enteredDate" type="date" readonly></div>
+<div><label>記録の根拠</label><select id="evidence"><option value="">選択</option><option>操縦者の記憶</option><option>機体アプリの飛行ログ</option><option>写真・動画の時刻</option><option>講習・予約記録</option><option>その他資料</option></select></div></div>
+<label style="margin-top:10px">根拠・注記</label><textarea id="retroNote" placeholder="例：飛行ログから45分を確認。離着陸時刻は確認できず。"></textarea>
+</div>
+<div class="card"><label>安全に影響した事項・不具合・対応</label><textarea id="safety" placeholder="なければ「なし」"></textarea></div>
+<button class="primary" style="width:100%" type="submit">この飛行記録を保存</button>
+</form>
+</section>
+
+<section id="historyView" class="view">
+<div class="card"><h3>保存済み記録</h3><div id="history" class="note">まだ記録がありません。</div></div>
+<div class="card"><label>機体で帳票出力</label><select id="printAircraft"></select><button id="printBtn" type="button" class="primary" style="width:100%;margin-top:10px">印刷 / PDF保存</button></div>
+</section>
+
+<section id="settingsView" class="view">
+<div class="card"><h3>機体</h3><form id="airForm">
+<div class="grid"><div><label>機体名</label><input id="aName" required placeholder="例：DJI Air 2"></div><div><label>登録記号</label><input id="aReg" required></div>
+<div><label>機体認証</label><select id="aCert"><option>なし</option><option>第一種</option><option>第二種</option></select></div><div><label>製造番号</label><input id="aSerial"></div></div>
+<button class="primary" style="width:100%;margin-top:10px">機体を追加</button></form><div id="airList"></div></div>
+<div class="card"><h3>操縦者</h3><form id="pilotForm"><div class="grid"><div><label>氏名</label><input id="pName" required></div><div><label>技能証明書番号</label><input id="pCert"></div></div><button class="primary" style="width:100%;margin-top:10px">操縦者を追加</button></form><div id="pilotList"></div></div>
+<div class="card"><h3>バックアップ</h3><button id="exportBtn" type="button" class="secondary" style="width:100%">JSONを書き出し</button><input id="importFile" type="file" accept="application/json" style="margin-top:8px"></div>
+</section>
+<section id="printView" class="view"></section>
+</main>
+<nav class="no-print"><button data-view="recordView">記録</button><button data-view="historyView">履歴・帳票</button><button data-view="settingsView">設定</button></nav>
+<script>
+const KEY='droneFlightLog.github.v1';let db;try{db=Object.assign({aircraft:[],pilots:[],records:[]},JSON.parse(localStorage.getItem(KEY)||'{}'))}catch(e){db={aircraft:[],pilots:[],records:[]}}let mode='normal';
+const $=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const now=()=>{const d=new Date();return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')};
+function calc(a,b){if(!a||!b)return'';let [ah,am]=a.split(':').map(Number),[bh,bm]=b.split(':').map(Number);let m=bh*60+bm-ah*60-am;if(m<0)m+=1440;return Math.max(1,m)}
+function save(){localStorage.setItem(KEY,JSON.stringify(db));render()}
+function setMode(m){mode=m;const p=m==='past';$('normalBtn').classList.toggle('active',!p);$('pastBtn').classList.toggle('active',p);$('normalPanel').classList.toggle('hidden',p);$('pastPanel').classList.toggle('hidden',!p);$('unknownWrap').classList.toggle('hidden',!p);$('confidenceWrap').classList.toggle('hidden',!p);$('pastHint').classList.toggle('hidden',!p);$('modeText').textContent=p?'過去記録：正確な時刻が不明でも、そのまま不明として保存できます。':'通常記録：飛行時に開始・終了を押せます。時刻は手動修正できます。';$('enteredDate').value=today()}
+$('normalBtn').onclick=()=>setMode('normal');$('pastBtn').onclick=()=>setMode('past');
+$('start').onclick=()=>{$('takeoff').value=now()};$('stop').onclick=()=>{$('landing').value=now();let m=calc($('takeoff').value,$('landing').value);if(m)$('minutes').value=m};
+['takeoff','landing'].forEach(id=>$(id).addEventListener('change',()=>{if(!$('unknownTimes').checked){let m=calc($('takeoff').value,$('landing').value);if(m)$('minutes').value=m}}));
+$('unknownTimes').onchange=()=>{let v=$('unknownTimes').checked;$('takeoff').disabled=v;$('landing').disabled=v;if(v){$('takeoff').value='';$('landing').value=''}};
+$('flightForm').onsubmit=e=>{e.preventDefault();let unk=mode==='past'&&$('unknownTimes').checked,conf=mode==='past'?$('confidence').value:'exact';
+if(!unk&&(!$('takeoff').value||!$('landing').value)){alert('時刻を入力するか、過去記録では「時刻不明」を選択してください。');return}
+if(conf!=='unknown'&&(!$('minutes').value||Number($('minutes').value)<1)){alert('正味飛行時間を入力してください。');return}
+db.records.push({id:String(Date.now()),mode,aircraftId:$('aircraft').value,pilotId:$('pilot').value,date:$('date').value,purpose:$('purpose').value.trim(),place:$('place').value.trim(),takeoff:unk?'':$('takeoff').value,landing:unk?'':$('landing').value,timesUnknown:unk,minutes:conf==='unknown'?null:Number($('minutes').value),confidence:conf,enteredDate:mode==='past'?$('enteredDate').value:$('date').value,evidence:mode==='past'?$('evidence').value:'',retroNote:mode==='past'?$('retroNote').value.trim():'',safety:$('safety').value.trim()});
+e.target.reset();$('date').value=today();$('enteredDate').value=today();setMode('normal');save();alert('保存しました。')};
+$('airForm').onsubmit=e=>{e.preventDefault();db.aircraft.push({id:String(Date.now()),name:$('aName').value.trim(),reg:$('aReg').value.trim(),cert:$('aCert').value,serial:$('aSerial').value.trim()});e.target.reset();save()};
+$('pilotForm').onsubmit=e=>{e.preventDefault();db.pilots.push({id:String(Date.now()),name:$('pName').value.trim(),cert:$('pCert').value.trim()});e.target.reset();save()};
+function render(){let ao='<option value="">選択してください</option>'+db.aircraft.map(a=>'<option value="'+a.id+'">'+esc(a.name)+' / '+esc(a.reg)+'</option>').join('');$('aircraft').innerHTML=ao;$('printAircraft').innerHTML=ao;$('pilot').innerHTML='<option value="">選択してください</option>'+db.pilots.map(p=>'<option value="'+p.id+'">'+esc(p.name)+'</option>').join('');
+$('airList').innerHTML=db.aircraft.map(a=>'<div class="record"><b>'+esc(a.name)+'</b><div class="note">'+esc(a.reg)+' / 機体認証：'+esc(a.cert)+'</div></div>').join('');
+$('pilotList').innerHTML=db.pilots.map(p=>'<div class="record"><b>'+esc(p.name)+'</b><div class="note">'+esc(p.cert||'技能証明書番号なし')+'</div></div>').join('');
+$('history').innerHTML=db.records.length?db.records.slice().reverse().map(r=>{let a=db.aircraft.find(x=>x.id===r.aircraftId)||{},p=db.pilots.find(x=>x.id===r.pilotId)||{};return '<div class="record"><b>'+esc(r.date)+' '+esc(a.name)+'</b><div class="note">'+(r.mode==='past'?'過去記録':'通常記録')+' / '+(r.timesUnknown?'時刻不明':esc(r.takeoff)+'–'+esc(r.landing))+' / '+(r.minutes==null?'飛行時間不明':r.minutes+'分'+(r.confidence==='approx'?'（概算）':''))+' / '+esc(p.name)+'</div>'+(r.retroNote?'<div class="warn" style="margin-top:6px">'+esc(r.retroNote)+'</div>':'')+'</div>'}).join(''):'まだ記録がありません。'}
+$('printBtn').onclick=()=>{let aid=$('printAircraft').value;if(!aid){alert('機体を選択してください');return}let a=db.aircraft.find(x=>x.id===aid)||{},rs=db.records.filter(r=>r.aircraftId===aid);$('printView').innerHTML='<div class="card"><h2>飛行記録</h2><p>機体：'+esc(a.name)+'　登録記号：'+esc(a.reg)+'　機体認証：'+esc(a.cert)+'</p><table><tr><th>日付</th><th>目的・場所</th><th>離陸</th><th>着陸</th><th>飛行時間</th><th>記録区分</th><th>注記</th></tr>'+rs.map(r=>'<tr><td>'+esc(r.date)+'</td><td>'+esc(r.purpose)+'<br>'+esc(r.place)+'</td><td>'+(r.timesUnknown?'不明':esc(r.takeoff))+'</td><td>'+(r.timesUnknown?'不明':esc(r.landing))+'</td><td>'+(r.minutes==null?'不明':r.minutes+'分'+(r.confidence==='approx'?'（概算）':''))+'</td><td>'+(r.mode==='past'?'遡及入力':'通常記録')+'</td><td>'+esc(r.retroNote||r.safety||'')+'</td></tr>').join('')+'</table></div>';document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));$('printView').classList.add('active');window.print();$('printView').classList.remove('active');$('historyView').classList.add('active')};
+$('exportBtn').onclick=()=>{const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='drone-flight-log-'+today()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),500)};
+$('importFile').onchange=async e=>{let f=e.target.files[0];if(!f)return;try{db=Object.assign({aircraft:[],pilots:[],records:[]},JSON.parse(await f.text()));save();alert('読み込みました。')}catch(err){alert('読み込めませんでした。')}};
+document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));$(b.dataset.view).classList.add('active');scrollTo({top:0,behavior:'smooth'})});
+$('date').value=today();$('enteredDate').value=today();setMode('normal');render();
+if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});
+</script>
+</body></html>
